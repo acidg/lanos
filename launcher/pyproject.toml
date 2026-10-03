@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lanbox"
+version = "0.1.0"
+description = "Game launcher for LANOS sticks"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = ["tomli-w"]
+
+[project.scripts]
+lanbox = "lanbox.cli:main"
+
+[tool.setuptools]
+packages = ["lanbox"]

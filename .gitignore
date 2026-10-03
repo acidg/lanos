@@ -23,3 +23,6 @@
 *.zip
 *.7z
 *.rar
+
+# Python bytecode
+__pycache__/
