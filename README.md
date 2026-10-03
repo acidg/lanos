@@ -6,7 +6,10 @@ play; known fixes live in this repo so they never have to be rediscovered.
 
 The system is NixOS, declared in this flake and pinned to nixpkgs `nixos-26.05`.
 
-**Status:** phase 1, bootable base image. No games or launcher yet.
+**Status:** phase 2, launcher and game libraries; Counter-Strike 1.6 is the first game.
+
+LANOS contains no games. Each LAN group keeps its games in a flake of its own and
+serves them from a library on the LAN; see [Games](#games).
 
 ## Build
 
@@ -152,14 +155,104 @@ system, so to revert, run the script again from the older checkout.
 An update that leaves the stick unable to boot or reach the network can only be fixed
 by flashing it again, which erases the player's data.
 
+## Games
+
+Three parts work together:
+
+- **LANOS** (this repository): the stick system, the launcher `lanbox`, the master
+  module and tools, and `lib` for describing games. It knows how to run games, not
+  which ones.
+- **A group flake**, one per LAN group: the group's games as recipes, plus where its
+  library is. A recipe holds everything about a game except its files, and pins those
+  files by hash, so a game's config and files always belong together. Recipes contain
+  no game data and can be shared. Ours is
+  [acidg/lanos-games](https://github.com/acidg/lanos-games).
+- **A library**, one per group: a Nix store on the master, typically the organizer's
+  laptop, holding the game files imported from installs the group owns, the built game
+  packages and the stick system. The master serves it on the LAN as a signed binary
+  cache. It never goes into git or a public cache, because it contains the games.
+
+Every player must own the games.
+
+### Starting a group
+
+```sh
+mkdir our-games && cd our-games
+nix flake init -t github:acidg/lanos#group
+```
+
+Create the library's signing key on the master and put the public key into
+`flake.nix`, together with the master's hostname:
+
+```sh
+nix key generate-secret --key-name lanos-our-group-1 > /path/to/library/keys/library.secret
+nix key convert-secret-to-public < /path/to/library/keys/library.secret
+```
+
+Sticks for the group are built from the group flake (`nix build .#image`), so they
+know the library and trust only its key. Flash them as described above.
+
+### Running the master
+
+The master is a NixOS machine importing the master module:
+
+```nix
+imports = [ lanos.nixosModules.master ];
+lanos.master = {
+  enable = true;
+  store = "/path/to/library";        # a disk with room for all games
+  user = "organizer";                 # owns the library store
+  signingKeyFile = "/path/to/library/keys/library.secret";
+};
+```
+
+It serves the library on port 5000, announces itself as `<hostname>.local` and
+installs the tools below, which run in a checkout of the group flake.
+
+```sh
+lanos-import cs16 ~/.steam/steam/steamapps/common/Half-Life
+lanos-import cs16 deck@steamdeck:.local/share/Steam/steamapps/common/Half-Life
+lanos-publish
+lanos-push lanbox-xxxxxx [game ...]
+```
+
+- `lanos-import` copies a game's files from an install, locally or over SSH, e.g. from
+  a Steam Deck with SSH enabled, into the library. If the files differ from the
+  recipe, it prints their hash; put it into the recipe when this is the version you
+  want.
+- `lanos-publish` builds every game and the stick system into the library and
+  publishes the index sticks read. Each publish is kept as a generation of the profile
+  `<library>/nix/var/nix/profiles/library`.
+- `lanos-push` installs games on a stick over SSH, copying only what it does not have.
+
+### On the stick
+
+Players run "Update Games" from the application menu, which installs every game of the
+library (`lanbox sync`). Each installed game gets its own menu entry. On the first
+start the launcher asks for the player's name; "lanbox name" changes it.
+
+```sh
+lanbox list            # installed games
+lanbox run cs16        # what the menu entry runs
+lanbox configure cs16  # render the configs and print the command, without starting
+```
+
+Each run is logged to `~/.local/state/lanbox/logs/`.
+
 ## Repository layout
 
 ```
-flake.nix               Pinned nixpkgs, system and image outputs
+flake.nix               Pinned nixpkgs; lib, modules, packages, group template
 hosts/lanbox/           Base system, hardware support, disk layout and image build
 modules/                clock, graphics (boot menu GPU entries), locale (language and
-                        keyboard chooser), network, session, firstboot, ssh
-scripts/                flash.sh, add-ssh-key.sh, update-stick.sh, run-vm.sh
+                        keyboard chooser), network, session, firstboot, ssh,
+                        games (launcher and library), master (library server)
+lib/                    mkGame, gameFiles and mkGroup for group flakes
+launcher/               lanbox, the game launcher (Python)
+pkgs/                   Nix packages of the launcher and the master tools
+scripts/                flash.sh, add-ssh-key.sh, update-stick.sh, run-vm.sh,
+                        lanos-import, lanos-publish, lanos-push
+templates/group/        Starting point for a group flake
 ```
 
 ## License

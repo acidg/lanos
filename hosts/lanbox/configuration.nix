@@ -9,6 +9,7 @@
     ../../modules/network.nix
     ../../modules/session.nix
     ../../modules/firstboot.nix
+    ../../modules/games.nix
     ../../modules/ssh.nix
   ];
 
