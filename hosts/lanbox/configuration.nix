@@ -3,6 +3,7 @@
   imports = [
     ./hardware.nix
     ./image.nix
+    ../../modules/clock.nix
     ../../modules/graphics.nix
     ../../modules/network.nix
     ../../modules/session.nix
@@ -25,17 +26,6 @@
   boot.loader.efi.canTouchEfiVariables = false;
   boot.initrd.systemd.enable = true;
 
-  time.timeZone = "Europe/Berlin";
-  # Whether a guest PC keeps its hardware clock in local time (Windows) or UTC (most
-  # Linux installs) cannot be detected. Assume local time, as most guest PCs run
-  # Windows; elsewhere the clock is off until NTP corrects it.
-  time.hardwareClockInLocalTime = true;
-  # Never write the guest's hardware clock, whichever convention it uses. chrony only
-  # does that when asked to (rtcsync or RTC trimming), unlike systemd-timesyncd.
-  services.chrony = {
-    enable = true;
-    enableRTCTrimming = false;
-  };
   i18n.defaultLocale = "en_US.UTF-8";
   # German by default, Alt+Shift switches to US.
   services.xserver.xkb = {
