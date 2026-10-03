@@ -116,6 +116,9 @@ Use the IP address if the LAN has no DNS for the hostnames.
 The image only contains ESP and root; the rest is created on first boot (see
 `hosts/lanbox/image.nix`).
 
+All sticks share the same partition IDs. Boot a PC with only one LANOS stick plugged
+in, otherwise it may mount partitions of the other stick.
+
 ## Checking a stick
 
 On the stick, open a terminal (Konsole) and run:
