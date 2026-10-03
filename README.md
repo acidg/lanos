@@ -138,11 +138,19 @@ nmcli device          # wired network connected
 
 ## Updating a stick
 
-From a checkout of this repo on the stick:
+A stick that has booted once is updated over the network instead of being flashed
+again, which keeps the player's data:
 
 ```sh
-sudo nixos-rebuild switch --flake .#lanbox
+scripts/update-stick.sh lanbox-xxxxxx
 ```
+
+This builds the system from the checkout, copies only what the stick does not have yet
+and makes it the boot default; it takes effect on the next boot. A stick holds a single
+system, so to revert, run the script again from the older checkout.
+
+An update that leaves the stick unable to boot or reach the network can only be fixed
+by flashing it again, which erases the player's data.
 
 ## Repository layout
 
@@ -151,7 +159,7 @@ flake.nix               Pinned nixpkgs, system and image outputs
 hosts/lanbox/           Base system, hardware support, disk layout and image build
 modules/                clock, graphics (boot menu GPU entries), locale (language and
                         keyboard chooser), network, session, firstboot, ssh
-scripts/                flash.sh, add-ssh-key.sh, run-vm.sh
+scripts/                flash.sh, add-ssh-key.sh, update-stick.sh, run-vm.sh
 ```
 
 ## License

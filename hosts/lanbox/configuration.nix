@@ -19,7 +19,9 @@
   system.nixos.distroName = "LANOS";
 
   boot.loader.systemd-boot.enable = true;
-  boot.loader.systemd-boot.configurationLimit = 5;
+  # One system per stick; the root partition only has room for a second one while an
+  # update is copied. A bad update is reverted by pushing the previous one again.
+  boot.loader.systemd-boot.configurationLimit = 1;
   # Players pick their graphics driver here, so leave them time to read the menu.
   boot.loader.timeout = 10;
   # Never touch the boot order of a guest PC; the stick boots via the removable-media
