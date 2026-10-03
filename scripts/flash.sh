@@ -43,6 +43,14 @@ read -rp "Everything on $dev will be erased. Type the device path to continue: "
 [[ $answer == "$dev" ]] || die "aborted"
 
 bmaptool=$(nix build --inputs-from "$repo" --no-link --print-out-paths nixpkgs#bmaptool)/bin/bmaptool
+
+# Ask for the password once, then keep sudo's timestamp fresh during the long copy, so
+# the following steps do not prompt again while nobody is watching.
+sudo -v
+while sudo -n -v 2> /dev/null; do sleep 60; done &
+keepalive=$!
+trap 'kill "$keepalive" 2> /dev/null' EXIT
+
 sudo "$bmaptool" copy --bmap "$bmap" "$image" "$dev"
 
 if [[ -f $key ]]; then
