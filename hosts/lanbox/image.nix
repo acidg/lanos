@@ -84,11 +84,10 @@ in
       fi
     '';
   };
-  # systemd-repart formats new partitions by calling mkfs.<fstype> from PATH.
-  boot.initrd.systemd.extraBin = {
-    "mkfs.ext4" = "${pkgs.e2fsprogs}/bin/mkfs.ext4";
-    "mkfs.btrfs" = "${pkgs.btrfs-progs}/bin/mkfs.btrfs";
-  };
+  # systemd-repart formats new partitions with mkfs.<fstype> and then mounts them, so
+  # the initrd needs the tools and kernel module of every filesystem it creates. ext4
+  # is already there for root.
+  boot.initrd.supportedFilesystems = [ "btrfs" ];
   # Sized for a 64 GB stick at minimum. Root holds about twice the system closure, so a
   # full nixpkgs update fits next to the running generation. On bigger sticks root and
   # /home stop at their maximum and /games takes the rest.

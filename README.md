@@ -71,9 +71,8 @@ On the first boot of a freshly flashed stick:
 
 - The partitions grow to fill the stick: root is extended and `/home` and `/games`
   are created in the free space.
-- systemd generates a new `/etc/machine-id`, and the hostname is set to
-  `lanbox-<first 6 characters of the machine id>`. This keeps sticks distinguishable on
-  the LAN.
+- systemd generates a new `/etc/machine-id`, and the hostname becomes `lanbox-` plus 6
+  hex characters derived from it. This keeps sticks distinguishable on the LAN.
 
 The desktop logs in automatically as user `player`, which has no password and may use
 `sudo` without one.
