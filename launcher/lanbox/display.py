@@ -6,6 +6,10 @@ import subprocess
 from dataclasses import dataclass
 
 
+# kscreen's Left, Right, Flipped90 and Flipped270: the output is turned by 90 degrees.
+SIDEWAYS_ROTATIONS = {2, 8, 32, 128}
+
+
 class DisplayError(Exception):
     pass
 
@@ -26,8 +30,12 @@ def parse_kscreen(text: str) -> Mode:
     primary = min(outputs, key=lambda output: output["priority"])
     for mode in primary["modes"]:
         if mode["id"] == primary["currentModeId"]:
-            size = mode["size"]
-            return Mode(size["width"], size["height"], round(mode["refreshRate"]))
+            width, height = mode["size"]["width"], mode["size"]["height"]
+            # Modes are in the panel's own orientation. Portrait panels such as the
+            # Steam Deck's are turned to landscape, and games must fill the turned screen.
+            if primary["rotation"] in SIDEWAYS_ROTATIONS:
+                width, height = height, width
+            return Mode(width, height, round(mode["refreshRate"]))
     raise DisplayError(f"Display {primary['name']} has no current mode.")
 
 

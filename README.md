@@ -71,6 +71,9 @@ In the firmware setup (BIOS):
 Then pick the stick from the firmware's one-time boot menu (often F12, F11, F8 or Esc,
 depending on the vendor). The stick never changes the PC's boot order.
 
+A Steam Deck needs no firmware changes: with the stick plugged in, hold Volume Down
+and press Power, then pick the stick from the boot manager.
+
 ## Boot menu
 
 | Entry | Use it for |
