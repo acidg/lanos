@@ -7,7 +7,8 @@ import subprocess
 import urllib.request
 from pathlib import Path
 
-from .manifest import MANIFEST_NAME, Game, load_installed
+from . import instance
+from .manifest import MANIFEST_NAME, Game, load, load_installed
 
 INDEX_NAME = "games.json"
 INDEX_FORMAT = 1
@@ -34,10 +35,11 @@ def fetch_index(url: str) -> dict[str, str]:
         raise LibraryError(f"Cannot read the game library at {url}: {error}") from None
 
 
-def install(packages: Path, game_id: str, store_path: str) -> None:
+def install(packages: Path, instances: Path, game_id: str, store_path: str) -> None:
     """Make store_path the installed package of game_id. Nix fetches it from the library
     if the stick does not have it yet, and the link in packages keeps it from being
-    garbage collected."""
+    garbage collected. The game's instance is prepared right away, so its first start
+    does not have to copy files."""
     packages.mkdir(parents=True, exist_ok=True)
     result = subprocess.run(
         ["nix-store", "--realise", store_path, "--add-root", str(packages / game_id)],
@@ -47,8 +49,10 @@ def install(packages: Path, game_id: str, store_path: str) -> None:
     )
     if result.returncode != 0:
         raise LibraryError(f"Cannot install {game_id}: {result.stderr.strip()}")
-    if not (packages / game_id / MANIFEST_NAME).is_file():
+    manifest = packages / game_id / MANIFEST_NAME
+    if not manifest.is_file():
         raise LibraryError(f"{store_path} is not a game package")
+    instance.prepare(load(manifest), instances / game_id)
 
 
 def desktop_entry(game: Game) -> str:

@@ -2,13 +2,12 @@
 
 import os
 import shlex
-import shutil
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from . import configure
+from . import configure, instance
 from .display import Mode
 from .manifest import Game
 from .profile import Profile
@@ -26,8 +25,12 @@ class Locations:
 
     def roots(self, game: Game) -> dict[str, Path]:
         """The directories config targets are relative to, by config root name."""
-        instance = self.instances / game.id
-        return {"home": self.home, "instance": instance, "install": instance / "install"}
+        game_instance = self.instances / game.id
+        return {
+            "home": self.home,
+            "instance": game_instance,
+            "install": instance.install_dir(game_instance),
+        }
 
 
 @dataclass(frozen=True)
@@ -52,27 +55,10 @@ def gamescope_command(native: Mode, values: dict[str, str]) -> list[str]:
     ]  # fmt: skip
 
 
-def refresh_install(source: Path, target: Path) -> None:
-    """Give the stick a writable copy of the game's files, renewed when the package
-    changes. On btrfs the copy shares its data with the Nix store until the game
-    changes a file."""
-    marker = target.with_name(target.name + ".source")
-    if marker.is_file() and marker.read_text() == str(source):
-        return
-    if target.exists():
-        shutil.rmtree(target)
-    # The package links to the files of several store paths; the copy holds the files.
-    subprocess.run(["cp", "-rL", "--reflink=auto", str(source), str(target)], check=True)
-    subprocess.run(["chmod", "-R", "u+w", str(target)], check=True)
-    marker.write_text(str(source))
-
-
 def prepare(game: Game, profile: Profile, native: Mode, where: Locations) -> Prepared:
     """Render the game's configs and return how to start it."""
     roots = where.roots(game)
-    roots["instance"].mkdir(parents=True, exist_ok=True)
-    if game.install is not None:
-        refresh_install(game.install, roots["install"])
+    instance.prepare(game, roots["instance"])
     values = configure.variables(game, profile, native, roots)
     configure.write_configs(game, values, roots)
     configure.run_hook(game, values, roots["instance"])

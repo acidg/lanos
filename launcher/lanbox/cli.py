@@ -84,7 +84,7 @@ def cmd_run(args, ui) -> None:
 
 
 def cmd_install(args, ui) -> None:
-    library.install(paths.packages_dir(), args.game, args.store_path)
+    library.install(paths.packages_dir(), paths.instances_dir(), args.game, args.store_path)
     library.update_menu(paths.packages_dir(), paths.applications_dir())
 
 
@@ -97,7 +97,7 @@ def cmd_sync(args, ui) -> None:
         if game_id not in available:
             raise ValueError(f"The library has no game '{game_id}'.")
         print(f"Installing {game_id}...")
-        library.install(paths.packages_dir(), game_id, available[game_id])
+        library.install(paths.packages_dir(), paths.instances_dir(), game_id, available[game_id])
     library.update_menu(paths.packages_dir(), paths.applications_dir())
 
 
