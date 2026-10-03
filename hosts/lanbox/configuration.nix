@@ -5,6 +5,7 @@
     ./image.nix
     ../../modules/clock.nix
     ../../modules/graphics.nix
+    ../../modules/locale.nix
     ../../modules/network.nix
     ../../modules/session.nix
     ../../modules/firstboot.nix
@@ -25,14 +26,6 @@
   # fallback path EFI/BOOT/BOOTX64.EFI, which bootctl installs as well.
   boot.loader.efi.canTouchEfiVariables = false;
   boot.initrd.systemd.enable = true;
-
-  i18n.defaultLocale = "en_US.UTF-8";
-  # German by default, Alt+Shift switches to US.
-  services.xserver.xkb = {
-    layout = "de,us";
-    options = "grp:alt_shift_toggle";
-  };
-  console.useXkbConfig = true;
 
   security.rtkit.enable = true;
   services.pipewire = {

@@ -53,6 +53,9 @@
     enable = true;
     user = "player";
   };
+  # The player has no password, so logging out must start a new session instead of
+  # stopping at a login screen nobody can get past.
+  services.displayManager.sddm.autoLogin.relogin = true;
 
   # Without a password a locked screen could never be unlocked again.
   environment.etc."xdg/kscreenlockerrc".text = ''

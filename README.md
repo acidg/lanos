@@ -90,7 +90,10 @@ On the first boot of a freshly flashed stick:
   hex characters derived from it. This keeps sticks distinguishable on the LAN.
 
 The desktop logs in automatically as user `player`, which has no password and may use
-`sudo` without one.
+`sudo` without one. On the first login it asks for the language (Deutsch or English)
+and the keyboard layout (German or US, Alt+Shift switches to the other), then restarts
+the session once. To change them later, run "Language and Keyboard" from the
+application menu.
 
 ## Remote access
 
@@ -146,8 +149,8 @@ sudo nixos-rebuild switch --flake .#lanbox
 ```
 flake.nix               Pinned nixpkgs, system and image outputs
 hosts/lanbox/           Base system, hardware support, disk layout and image build
-modules/                clock, graphics (boot menu GPU entries), network, session,
-                        firstboot, ssh
+modules/                clock, graphics (boot menu GPU entries), locale (language and
+                        keyboard chooser), network, session, firstboot, ssh
 scripts/                flash.sh, add-ssh-key.sh, run-vm.sh
 ```
 
