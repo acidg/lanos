@@ -18,10 +18,14 @@ let
       root = mkOption {
         type = types.enum [
           "instance"
+          "install"
           "home"
         ];
         default = "instance";
-        description = "The game's writable directory on the stick, or the player's home.";
+        description = ''
+          The game's writable directory on the stick, its writable copy of install, or
+          the player's home.
+        '';
       };
     };
   };
@@ -40,6 +44,14 @@ let
       type = types.nullOr types.package;
       default = null;
       description = "The game files from lanos.gameFiles, so the tools can import them.";
+    };
+    install = mkOption {
+      type = types.nullOr types.package;
+      default = null;
+      description = ''
+        Game files the stick gets a writable copy of, as $install, for games that write
+        into their own directory. The copy is renewed when the package changes.
+      '';
     };
     command = mkOption {
       type = types.nonEmptyListOf types.str;
@@ -101,7 +113,11 @@ let
       ];
     }).config;
 
-  manifest = {
+  usesInstall = builtins.any (config: config.root == "install") game.configs;
+
+  manifest = assert lib.assertMsg (
+    usesInstall -> game.install != null
+  ) "${game.id}: configs with root \"install\" need the install option"; {
     # The game.json layout the launcher understands.
     format = 1;
     inherit (game)
@@ -114,6 +130,7 @@ let
       gamescope
       ;
     resolution = parseResolution game.resolution;
+    install = if game.install == null then null else "${game.install}";
     configs = map (config: {
       template = "${config.template}";
       inherit (config) target root;

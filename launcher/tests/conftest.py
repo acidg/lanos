@@ -24,6 +24,7 @@ def game_json(**overrides) -> dict:
         "resolution": {"width": 1024, "height": 768},
         "configs": [],
         "configure": None,
+        "install": None,
     }
     return {**data, **overrides}
 

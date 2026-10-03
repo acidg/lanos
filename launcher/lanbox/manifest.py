@@ -8,7 +8,7 @@ from pathlib import Path
 MANIFEST_NAME = "game.json"
 # The game.json layout this launcher understands; mkGame writes the same number.
 FORMAT = 1
-CONFIG_ROOTS = ("home", "instance")
+CONFIG_ROOTS = ("home", "instance", "install")
 
 
 class ManifestError(Exception):
@@ -25,8 +25,8 @@ class Resolution:
 class ConfigFile:
     template: Path
     target: str
-    # What target is relative to: the player's home, or the game's writable directory
-    # on this stick.
+    # What target is relative to: the player's home, the game's writable directory on
+    # this stick, or the stick's writable copy of the game's files.
     root: str
 
 
@@ -44,6 +44,9 @@ class Game:
     resolution: Resolution | None
     configs: tuple[ConfigFile, ...]
     configure_hook: Path | None
+    # Game files the stick gets a writable copy of, for games that write next to
+    # themselves.
+    install: Path | None
 
 
 def _parse(data: dict) -> Game:
@@ -68,6 +71,7 @@ def _parse(data: dict) -> Game:
         resolution=Resolution(**resolution) if resolution else None,
         configs=configs,
         configure_hook=Path(data["configure"]) if data["configure"] else None,
+        install=Path(data["install"]) if data["install"] else None,
     )
 
 

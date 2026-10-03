@@ -80,6 +80,47 @@ def test_native_resolution_renders_at_display_size(packages, tmp_path, locations
     assert command[2] == "2560"
 
 
+def store_package(tmp_path, name, text):
+    """A package like mkGame's install: a directory of links to files elsewhere."""
+    real = tmp_path / f"{name}-files"
+    real.mkdir()
+    (real / "game.exe").write_text(text)
+    (real / "game.exe").chmod(0o444)
+    package = tmp_path / name
+    package.mkdir()
+    (package / "game.exe").symlink_to(real / "game.exe")
+    return package
+
+
+def test_install_is_a_writable_copy_with_configs(packages, tmp_path, locations, player):
+    configs = [{"template": str(tmp_path / "user.cfg"), "target": "user.cfg", "root": "install"}]
+    install = store_package(tmp_path, "v1", "v1")
+    game = make_game(packages, tmp_path, install=str(install), configs=configs)
+
+    launch.prepare(game, player, NATIVE, locations)
+
+    copy = locations.instances / "test" / "install"
+    assert not (copy / "game.exe").is_symlink()
+    assert (copy / "game.exe").read_text() == "v1"
+    (copy / "game.exe").write_text("changed by the game")
+    assert (copy / "user.cfg").read_text().startswith('name "Bene"')
+
+
+def test_install_is_kept_until_the_package_changes(packages, tmp_path, locations, player):
+    game = make_game(packages, tmp_path, install=str(store_package(tmp_path, "v1", "v1")))
+    launch.prepare(game, player, NATIVE, locations)
+    copy = locations.instances / "test" / "install" / "game.exe"
+    copy.write_text("saved")
+
+    launch.prepare(game, player, NATIVE, locations)
+    assert copy.read_text() == "saved"
+
+    newer_install = str(store_package(tmp_path, "v2", "v2"))
+    newer = make_game(tmp_path / "newer-packages", tmp_path, install=newer_install)
+    launch.prepare(newer, player, NATIVE, locations)
+    assert copy.read_text() == "v2"
+
+
 def test_configure_hook_gets_variables(packages, tmp_path, locations, player):
     hook = tmp_path / "configure"
     hook.write_text('#!/bin/sh\necho "$LANBOX_PLAYER_NAME $LANBOX_WIDTH" > hook.out\n')
