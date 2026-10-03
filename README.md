@@ -149,3 +149,8 @@ hosts/lanbox/           Base system, hardware support, disk layout and image bui
 modules/                graphics (boot menu GPU entries), network, session, firstboot, ssh
 scripts/                flash.sh, add-ssh-key.sh, run-vm.sh
 ```
+
+## License
+
+MIT, see [LICENSE](LICENSE). The license covers this repository only; the games
+themselves are not part of it, and every player must own them.
