@@ -58,6 +58,32 @@ in
   };
 
   boot.initrd.systemd.repart.enable = true;
+  # A freshly flashed stick still has the backup GPT header where the image ended, so
+  # the partition table hides the rest of the stick from systemd-repart.
+  boot.initrd.systemd.services.lanos-relocate-gpt = {
+    description = "Move the backup GPT header to the end of the stick";
+    unitConfig.DefaultDependencies = false;
+    after = [ "sysroot.mount" ];
+    before = [ "systemd-repart.service" ];
+    requiredBy = [ "systemd-repart.service" ];
+    serviceConfig.Type = "oneshot";
+    path = [
+      pkgs.coreutils
+      pkgs.gnused
+      pkgs.gptfdisk
+    ];
+    script = ''
+      part=$(basename "$(readlink -f ${byPartUuid "root"})")
+      disk=/dev/$(basename "$(readlink -f "/sys/class/block/$part/..")")
+      table=$(sgdisk -p "$disk")
+      sectors=$(echo "$table" | sed -n 's/^Disk .*: \([0-9]*\) sectors.*/\1/p')
+      last_usable=$(echo "$table" | sed -n 's/.*last usable sector is \([0-9]*\).*/\1/p')
+      # The backup header and partition array take the last 33 sectors.
+      if ((last_usable < sectors - 34)); then
+        sgdisk -e "$disk"
+      fi
+    '';
+  };
   # systemd-repart formats new partitions by calling mkfs.<fstype> from PATH.
   boot.initrd.systemd.extraBin = {
     "mkfs.ext4" = "${pkgs.e2fsprogs}/bin/mkfs.ext4";
