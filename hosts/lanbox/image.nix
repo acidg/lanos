@@ -27,6 +27,12 @@ let
   byPartUuid = name: "/dev/disk/by-partuuid/${lib.toLower partUuid.${name}}";
 in
 {
+  # The desktop must not offer the running system's stick for safe removal, where a
+  # player could unmount it by accident. Other USB drives stay removable.
+  services.udev.extraRules = lib.concatMapStrings (uuid: ''
+    SUBSYSTEM=="block", ENV{ID_PART_ENTRY_UUID}=="${lib.toLower uuid}", ENV{UDISKS_SYSTEM}="1", ENV{UDISKS_IGNORE}="1"
+  '') (lib.attrValues partUuid);
+
   fileSystems."/" = {
     device = byPartUuid "root";
     fsType = "ext4";
