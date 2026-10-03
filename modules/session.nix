@@ -60,4 +60,11 @@
     Autolock=false
     LockOnResume=false
   '';
+  # A wallet would ask the player to create a password on the first Wi-Fi login, and
+  # protects nothing on an unencrypted stick. Without it, Wi-Fi passwords are stored
+  # by NetworkManager.
+  environment.etc."xdg/kwalletrc".text = ''
+    [Wallet]
+    Enabled=false
+  '';
 }
