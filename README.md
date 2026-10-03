@@ -90,8 +90,7 @@ open-source nouveau driver, but expect poor performance.
 
 On the first boot of a freshly flashed stick:
 
-- The partitions grow to fill the stick: root is extended and `/home` and `/games`
-  are created in the free space.
+- The btrfs partition and its filesystem grow to fill the stick.
 - systemd generates a new `/etc/machine-id`, and the hostname becomes `lanbox-` plus 6
   hex characters derived from it. This keeps sticks distinguishable on the LAN.
 
@@ -118,12 +117,22 @@ Use the IP address if the LAN has no DNS for the hostnames.
 | Partition | Filesystem | Size |
 |---|---|---|
 | ESP (`/boot`) | vfat | 1 GiB |
-| root (`/`) | ext4 | 24 to 40 GiB |
-| `/home` | ext4 | 2 to 8 GiB |
-| `/games` | btrfs, zstd compression | the rest, at least 8 GiB |
+| `lanos` | btrfs, zstd compression | the rest of the stick |
 
-The image only contains ESP and root; the rest is created on first boot (see
-`hosts/lanbox/image.nix`).
+| btrfs subvolume | Mounted at |
+|---|---|
+| `@root` | `/` |
+| `@nix` | `/nix` |
+| `@home` | `/home` |
+| `@games` | `/games`, owned by `player` |
+
+The subvolumes share the space of one filesystem, so none of them has a fixed size,
+and game files can be reflinked between the Nix store and `/games` without taking
+space twice.
+
+The image only contains the ESP and a btrfs partition just big enough for the system;
+both partition and filesystem grow on first boot (see `hosts/lanbox/image.nix`, the
+image build is `hosts/lanbox/disk-image.nix`).
 
 All sticks share the same partition IDs. Boot a PC with only one LANOS stick plugged
 in, otherwise it may mount partitions of the other stick.
@@ -138,7 +147,8 @@ glxinfo32 -B          # 32-bit OpenGL
 vulkaninfo --summary  # 64-bit Vulkan
 vulkaninfo32 --summary
 hostnamectl           # unique lanbox-xxxxxx hostname
-lsblk                 # partitions grown to fill the stick
+lsblk                 # btrfs partition grown to fill the stick
+df -h /               # filesystem grown with it
 nmcli device          # wired network connected
 ```
 

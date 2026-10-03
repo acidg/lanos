@@ -1,13 +1,19 @@
 # Disk layout of the stick and the raw image build.
 #
-# The image only holds ESP and root, so it stays small to build and flash. On first
-# boot, systemd-repart in the initrd grows root and creates /home and /games in the
-# remaining space, so one image fits sticks of any size.
+# The stick has an ESP and one btrfs partition with a subvolume each for /, /nix, /home
+# and /games. Sharing one filesystem means there are no fixed partition sizes to
+# outgrow, and files can be reflinked between /nix/store and /games: game packages live
+# in the store, and the writable per-stick copies in /games/instances share their
+# blocks until they are changed.
+#
+# The image only holds the ESP and a btrfs partition just big enough for the system, so
+# it stays small to build and flash. On first boot, systemd-repart in the initrd grows
+# that partition to the end of the stick and systemd-growfs grows the filesystem, so one
+# image fits sticks of any size.
 {
   config,
   lib,
   pkgs,
-  modulesPath,
   ...
 }:
 let
@@ -16,15 +22,27 @@ let
   # (unlike labels such as "nixos" or "ESP").
   partUuid = {
     esp = "849D0E6E-2E6D-4351-92FE-1DB24945C61E";
-    root = "958A0989-51EA-4883-A800-554CA55AB1B8";
-    home = "5D4C2DBE-05F4-4E00-90E8-721F4407B740";
-    games = "9C3517DC-511B-4E9E-AD73-CDD6DFBF40B3";
+    lanos = "958A0989-51EA-4883-A800-554CA55AB1B8";
   };
-  # Own GPT type for /games: root uses the generic Linux type and systemd-repart
-  # matches existing partitions to definitions by type.
-  gamesPartType = "8A3FAA84-D3AE-49CA-8FB5-25215B374126";
 
   byPartUuid = name: "/dev/disk/by-partuuid/${lib.toLower partUuid.${name}}";
+
+  subvolumes = {
+    "/" = "@root";
+    "/nix" = "@nix";
+    "/home" = "@home";
+    "/games" = "@games";
+  };
+  btrfsOptions = [
+    "noatime"
+    "compress=zstd"
+  ];
+
+  subvolumeMount = mountPoint: {
+    device = byPartUuid "lanos";
+    fsType = "btrfs";
+    options = [ "subvol=${subvolumes.${mountPoint}}" ] ++ btrfsOptions;
+  };
 in
 {
   # The desktop must not offer the running system's stick for safe removal, where a
@@ -33,12 +51,16 @@ in
     SUBSYSTEM=="block", ENV{ID_PART_ENTRY_UUID}=="${lib.toLower uuid}", ENV{UDISKS_SYSTEM}="1", ENV{UDISKS_IGNORE}="1"
   '') (lib.attrValues partUuid);
 
-  fileSystems."/" = {
-    device = byPartUuid "root";
-    fsType = "ext4";
+  # Growing the filesystem through any of its mounts grows it for all subvolumes.
+  fileSystems."/" = subvolumeMount "/" // {
     autoResize = true;
-    options = [ "noatime" ];
   };
+  fileSystems."/nix" = subvolumeMount "/nix";
+  fileSystems."/home" = subvolumeMount "/home" // {
+    # User homes are created during activation, which runs in the initrd.
+    neededForBoot = true;
+  };
+  fileSystems."/games" = subvolumeMount "/games";
   fileSystems."/boot" = {
     device = byPartUuid "esp";
     fsType = "vfat";
@@ -47,20 +69,12 @@ in
       "dmask=0077"
     ];
   };
-  fileSystems."/home" = {
-    device = byPartUuid "home";
-    fsType = "ext4";
-    options = [ "noatime" ];
-    # User homes are created during activation, which runs in the initrd.
-    neededForBoot = true;
-  };
-  fileSystems."/games" = {
-    device = byPartUuid "games";
-    fsType = "btrfs";
-    options = [
-      "noatime"
-      "compress=zstd"
-    ];
+
+  # The launcher installs and updates games as the player.
+  systemd.tmpfiles.settings."10-games"."/games".d = {
+    user = "player";
+    group = "users";
+    mode = "0755";
   };
 
   boot.initrd.systemd.repart.enable = true;
@@ -79,7 +93,7 @@ in
       pkgs.gptfdisk
     ];
     script = ''
-      part=$(basename "$(readlink -f ${byPartUuid "root"})")
+      part=$(basename "$(readlink -f ${byPartUuid "lanos"})")
       disk=/dev/$(basename "$(readlink -f "/sys/class/block/$part/..")")
       table=$(sgdisk -p "$disk")
       sectors=$(echo "$table" | sed -n 's/^Disk .*: \([0-9]*\) sectors.*/\1/p')
@@ -90,53 +104,19 @@ in
       fi
     '';
   };
-  # systemd-repart formats new partitions with mkfs.<fstype> and then mounts them, so
-  # the initrd needs the tools and kernel module of every filesystem it creates. ext4
-  # is already there for root.
-  boot.initrd.supportedFilesystems = [ "btrfs" ];
-  # Sized for a 64 GB stick at minimum. Root holds about twice the system closure, so a
-  # full nixpkgs update fits next to the running generation. On bigger sticks root and
-  # /home stop at their maximum and /games takes the rest.
-  systemd.repart.partitions = {
-    "10-root" = {
-      Type = "linux-generic";
-      SizeMinBytes = "24G";
-      SizeMaxBytes = "40G";
-    };
-    "20-home" = {
-      Type = "home";
-      UUID = partUuid.home;
-      Label = "lanos-home";
-      Format = "ext4";
-      SizeMinBytes = "2G";
-      SizeMaxBytes = "8G";
-    };
-    "30-games" = {
-      Type = gamesPartType;
-      UUID = partUuid.games;
-      Label = "lanos-games";
-      Format = "btrfs";
-      SizeMinBytes = "8G";
-      Weight = 10000;
-    };
-  };
+  # systemd-repart matches the btrfs partition by its type. Without a size limit it
+  # grows the partition over all free space behind it.
+  systemd.repart.partitions."10-lanos".Type = "linux-generic";
 
-  system.build.image = import "${modulesPath}/../lib/make-disk-image.nix" {
-    inherit config lib pkgs;
-    name = "lanos-image";
-    baseName = "lanos";
-    format = "raw";
-    partitionTableType = "efi";
-    # Room for kernel and initrd of every generation times every boot menu entry.
-    bootSize = "1024M";
-    label = "lanos-root";
-    rootGPUID = partUuid.root;
-    copyChannel = false;
-    memSize = 4096;
-    # The block map lets bmaptool skip the unused parts of the image when flashing.
-    postVM = ''
-      ${pkgs.gptfdisk}/bin/sgdisk --partition-guid=1:${partUuid.esp} $diskImage
-      ${pkgs.bmaptool}/bin/bmaptool create $diskImage -o $out/lanos.bmap
-    '';
+  system.build.image = import ./disk-image.nix {
+    inherit
+      config
+      lib
+      pkgs
+      partUuid
+      subvolumes
+      btrfsOptions
+      ;
+    label = "lanos";
   };
 }

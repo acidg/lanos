@@ -31,9 +31,9 @@ echo "Building the system..."
 system=$(nix build --no-link --print-out-paths "$repo#nixosConfigurations.lanbox.config.system.build.toplevel")
 
 echo "Removing systems from $host that no longer run..."
-# The root partition has room for two systems, the running one and the update. A
-# system replaced by an earlier update stays in the store until it is no longer
-# running, so it is removed here rather than right after that update.
+# The stick keeps only the running system, so older systems do not take space from
+# the games. A system replaced by an earlier update stays in the store until it is no
+# longer running, so it is removed here rather than right after that update.
 ssh "${ssh_opts[@]}" "player@$host" "sudo nix-store --gc 2>&1 | tail -1"
 
 echo "Copying $system to $host..."

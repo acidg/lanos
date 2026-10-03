@@ -20,8 +20,8 @@
   system.nixos.distroName = "LANOS";
 
   boot.loader.systemd-boot.enable = true;
-  # One system per stick; the root partition only has room for a second one while an
-  # update is copied. A bad update is reverted by pushing the previous one again.
+  # One system per stick, so older systems do not take space from the games. A bad
+  # update is reverted by pushing the previous one again.
   boot.loader.systemd-boot.configurationLimit = 1;
   # Players pick their graphics driver here, so leave them time to read the menu.
   boot.loader.timeout = 10;

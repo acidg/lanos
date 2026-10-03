@@ -58,4 +58,4 @@ if [[ -f $key ]]; then
 else
   echo "No SSH key at $default_key, the stick has no remote access."
 fi
-echo "Done. Partitions grow to fill the stick on its first boot."
+echo "Done. The system partition grows to fill the stick on its first boot."
