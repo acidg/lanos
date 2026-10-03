@@ -165,8 +165,7 @@ Three parts work together:
 - **A group flake**, one per LAN group: the group's games as recipes, plus where its
   library is. A recipe holds everything about a game except its files, and pins those
   files by hash, so a game's config and files always belong together. Recipes contain
-  no game data and can be shared. Ours is
-  [acidg/lanos-games](https://github.com/acidg/lanos-games).
+  no game data.
 - **A library**, one per group: a Nix store on the master, typically the organizer's
   laptop, holding the game files imported from installs the group owns, the built game
   packages and the stick system. The master serves it on the LAN as a signed binary
