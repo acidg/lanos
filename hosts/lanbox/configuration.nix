@@ -26,6 +26,9 @@
   boot.initrd.systemd.enable = true;
 
   time.timeZone = "Europe/Berlin";
+  # Guest PCs mostly run Windows, which keeps the hardware clock in local time. Using
+  # UTC would show a wrong time here and, once synced, leave a wrong clock in Windows.
+  time.hardwareClockInLocalTime = true;
   i18n.defaultLocale = "en_US.UTF-8";
   # German by default, Alt+Shift switches to US.
   services.xserver.xkb = {
