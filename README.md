@@ -146,7 +146,8 @@ sudo nixos-rebuild switch --flake .#lanbox
 ```
 flake.nix               Pinned nixpkgs, system and image outputs
 hosts/lanbox/           Base system, hardware support, disk layout and image build
-modules/                graphics (boot menu GPU entries), network, session, firstboot, ssh
+modules/                clock, graphics (boot menu GPU entries), network, session,
+                        firstboot, ssh
 scripts/                flash.sh, add-ssh-key.sh, run-vm.sh
 ```
 
