@@ -68,6 +68,12 @@
     Autolock=false
     LockOnResume=false
   '';
+  # On a laptop without a mouse, players walk with the keys and aim with the touchpad
+  # at the same time, which disable-while-typing would block.
+  environment.etc."xdg/kcminputrc".text = ''
+    [Libinput][Defaults][Touchpad]
+    DisableWhileTyping=false
+  '';
   # A wallet would ask the player to create a password on the first Wi-Fi login, and
   # protects nothing on an unencrypted stick. Without it, Wi-Fi passwords are stored
   # by NetworkManager.
