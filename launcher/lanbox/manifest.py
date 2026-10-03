@@ -37,6 +37,8 @@ class Game:
     version: str
     command: tuple[str, ...]
     env: dict[str, str]
+    # Working directory, a template like the command.
+    directory: str
     gamescope: bool
     # None means the display's native resolution.
     resolution: Resolution | None
@@ -61,6 +63,7 @@ def _parse(data: dict) -> Game:
         version=data["version"],
         command=tuple(data["command"]),
         env=dict(data["env"]),
+        directory=data["directory"],
         gamescope=data["gamescope"],
         resolution=Resolution(**resolution) if resolution else None,
         configs=configs,

@@ -19,6 +19,7 @@ def game_json(**overrides) -> dict:
         "version": "1.0",
         "command": ["/bin/game", "-width", "$width", "+name", "$player_name"],
         "env": {},
+        "directory": "$instance",
         "gamescope": False,
         "resolution": {"width": 1024, "height": 768},
         "configs": [],

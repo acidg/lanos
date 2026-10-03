@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from conftest import NATIVE, write_package
 
@@ -50,6 +52,12 @@ def test_command_and_env_are_rendered(packages, tmp_path, locations, player):
     assert prepared.command == ["/bin/game", "-width", "1024", "+name", "Bene"]
     assert prepared.env == {"WINEPREFIX": f"{instance}/prefix"}
     assert prepared.cwd == instance
+
+
+def test_game_can_start_in_another_directory(packages, tmp_path, locations, player):
+    game = make_game(packages, tmp_path, directory="/nix/store/engine/lib")
+
+    assert launch.prepare(game, player, NATIVE, locations).cwd == Path("/nix/store/engine/lib")
 
 
 def test_gamescope_scales_game_resolution_to_native(packages, tmp_path, locations, player):

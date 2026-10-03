@@ -61,7 +61,8 @@ def prepare(game: Game, profile: Profile, native: Mode, where: Locations) -> Pre
     command = configure.render_command(game, values)
     if game.gamescope:
         command = gamescope_command(native, values) + command
-    return Prepared(command, configure.render_env(game, values), roots["instance"])
+    directory = Path(configure.render(game.directory, values, f"{game.id} directory"))
+    return Prepared(command, configure.render_env(game, values), directory)
 
 
 def run(game: Game, profile: Profile, native: Mode, where: Locations) -> Path:

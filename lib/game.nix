@@ -50,6 +50,14 @@ let
       default = { };
       description = "Environment variables, with the same template variables.";
     };
+    directory = mkOption {
+      type = types.str;
+      default = "$instance";
+      description = ''
+        Working directory the game starts in; many games load their own libraries
+        from there. Defaults to the game's writable directory on the stick.
+      '';
+    };
     gamescope = mkOption {
       type = types.bool;
       default = true;
@@ -102,6 +110,7 @@ let
       version
       command
       env
+      directory
       gamescope
       ;
     resolution = parseResolution game.resolution;
