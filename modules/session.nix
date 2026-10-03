@@ -57,6 +57,11 @@
   # stopping at a login screen nobody can get past.
   services.displayManager.sddm.autoLogin.relogin = true;
 
+  # Players switch off and leave; a hung game or session process must not hold up the
+  # shutdown for minutes.
+  systemd.user.extraConfig = "DefaultTimeoutStopSec=10s";
+  systemd.services."user@".serviceConfig.TimeoutStopSec = "10s";
+
   # Without a password a locked screen could never be unlocked again.
   environment.etc."xdg/kscreenlockerrc".text = ''
     [Daemon]
