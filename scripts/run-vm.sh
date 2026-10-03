@@ -5,12 +5,17 @@
 # the overlay keeps state between runs. Delete vm/ (or rebuild the image) to test a
 # fresh first boot again.
 #
-# Environment: STICK_SIZE (default 64G), VM_DISPLAY (default gtk, e.g. "none").
+# Environment:
+#   VM_IMAGE     raw image to boot (default result-image/lanos.img), e.g. a copy
+#                prepared with add-ssh-key.sh
+#   STICK_SIZE   size of the virtual stick (default 64G)
+#   VM_DISPLAY   QEMU display (default gtk, e.g. "none")
+#   VM_SSH_PORT  host port forwarded to the stick's SSH port (default 2222)
 # Extra arguments are passed to QEMU.
 set -euo pipefail
 
 repo=$(cd "$(dirname "$0")/.." && pwd)
-image=$(realpath "$repo/result-image/lanos.img")
+image=$(realpath "${VM_IMAGE:-$repo/result-image/lanos.img}")
 vm="$repo/vm"
 overlay="$vm/stick.qcow2"
 
@@ -36,5 +41,5 @@ exec "$qemu/qemu-system-x86_64" \
   -device virtio-vga \
   -display "${VM_DISPLAY:-gtk}" \
   -monitor unix:"$vm/monitor.sock",server,nowait \
-  -nic user,model=virtio-net-pci \
+  -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:"${VM_SSH_PORT:-2222}"-:22 \
   "$@"

@@ -27,17 +27,32 @@ scripts/run-vm.sh
 ```
 
 Boots the image in QEMU with UEFI, attached as a 64 GB USB stick. Writes go to an
-overlay in `vm/`; delete that directory to test a fresh first boot again.
+overlay in `vm/`; delete that directory to test a fresh first boot again. The VM's SSH
+port is forwarded to `localhost:2222`; see the script header for more options.
+
+## SSH key
+
+The image contains no SSH key. The PC that creates the sticks holds one key, which is
+put on every stick when it is flashed, so the organizer can reach all sticks on the
+LAN to debug and push fixes. Create it once:
+
+```sh
+ssh-keygen -t ed25519 -f ~/.ssh/lanos_ed25519 -C lanos-master
+```
 
 ## Flash a stick
 
 ```sh
-scripts/flash.sh /dev/sdX
+scripts/flash.sh /dev/sdX [public key file]
 ```
 
 The script only writes to unmounted, USB-attached disks, asks for confirmation and
-uses `sudo` for the write itself. Use a USB 3 SSD stick, 64 GB at the very least,
-128 GB or more for the full game set.
+uses `sudo` for the write itself. Afterwards it adds the SSH public key
+(`~/.ssh/lanos_ed25519.pub` by default); without a key the stick has no remote access.
+To add or replace the key on an already flashed stick, run
+`scripts/add-ssh-key.sh /dev/sdX [public key file]`.
+
+Use a USB 3 SSD stick, 64 GB at the very least, 128 GB or more for the full game set.
 
 Always create sticks by flashing the image. Never copy a stick that has already been
 booted: it would carry over that stick's identity (see [First boot](#first-boot)).
@@ -76,6 +91,18 @@ On the first boot of a freshly flashed stick:
 
 The desktop logs in automatically as user `player`, which has no password and may use
 `sudo` without one.
+
+## Remote access
+
+Each stick runs an SSH server that only accepts the key added at flashing time, for
+user `player` (no passwords, no root login). Each stick generates its own host key on
+first boot.
+
+```sh
+ssh -i ~/.ssh/lanos_ed25519 player@lanbox-xxxxxx
+```
+
+Use the IP address if the LAN has no DNS for the hostnames.
 
 ## Disk layout
 
@@ -116,6 +143,6 @@ sudo nixos-rebuild switch --flake .#lanbox
 ```
 flake.nix               Pinned nixpkgs, system and image outputs
 hosts/lanbox/           Base system, hardware support, disk layout and image build
-modules/                graphics (boot menu GPU entries), network, session, firstboot
-scripts/                flash.sh, run-vm.sh
+modules/                graphics (boot menu GPU entries), network, session, firstboot, ssh
+scripts/                flash.sh, add-ssh-key.sh, run-vm.sh
 ```

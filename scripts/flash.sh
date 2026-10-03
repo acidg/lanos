@@ -5,7 +5,11 @@
 # confirmation. USB SSD sticks often report themselves as non-removable, so the
 # transport is checked instead of the removable flag.
 #
-# Usage: scripts/flash.sh /dev/sdX
+# Afterwards the SSH public key is added (see add-ssh-key.sh). Without an explicit key
+# the default ~/.ssh/lanos_ed25519.pub is used if it exists; otherwise the stick gets
+# no remote access.
+#
+# Usage: scripts/flash.sh /dev/sdX [public key file]
 set -euo pipefail
 
 die() {
@@ -13,14 +17,17 @@ die() {
   exit 1
 }
 
-[[ $# -eq 1 ]] || die "usage: $0 /dev/sdX"
+[[ $# -eq 1 || $# -eq 2 ]] || die "usage: $0 /dev/sdX [public key file]"
 dev=$1
+default_key="$HOME/.ssh/lanos_ed25519.pub"
+key=${2:-$default_key}
 repo=$(cd "$(dirname "$0")/.." && pwd)
 image_dir="$repo/result-image"
 image="$image_dir/lanos.img"
 bmap="$image_dir/lanos.bmap"
 
 [[ -f $image ]] || die "no image at $image, build it first: nix build .#image -o result-image"
+[[ $# -eq 1 || -f $key ]] || die "no public key at $key"
 [[ -b $dev ]] || die "$dev is not a block device"
 [[ $(lsblk -dno TYPE "$dev") == disk ]] || die "$dev is not a whole disk"
 [[ $(lsblk -dno TRAN "$dev") == usb ]] || die "$dev is not attached via USB"
@@ -37,4 +44,10 @@ read -rp "Everything on $dev will be erased. Type the device path to continue: "
 
 bmaptool=$(nix build --inputs-from "$repo" --no-link --print-out-paths nixpkgs#bmaptool)/bin/bmaptool
 sudo "$bmaptool" copy --bmap "$bmap" "$image" "$dev"
+
+if [[ -f $key ]]; then
+  "$repo/scripts/add-ssh-key.sh" "$dev" "$key"
+else
+  echo "No SSH key at $default_key, the stick has no remote access."
+fi
 echo "Done. Partitions grow to fill the stick on its first boot."

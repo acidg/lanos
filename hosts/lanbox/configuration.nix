@@ -7,6 +7,7 @@
     ../../modules/network.nix
     ../../modules/session.nix
     ../../modules/firstboot.nix
+    ../../modules/ssh.nix
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
