@@ -52,7 +52,13 @@ def install(packages: Path, instances: Path, game_id: str, store_path: str) -> N
     manifest = packages / game_id / MANIFEST_NAME
     if not manifest.is_file():
         raise LibraryError(f"{store_path} is not a game package")
-    instance.prepare(load(manifest), instances / game_id)
+    game_instance = instances / game_id
+    try:
+        with instance.lock(game_instance):
+            instance.prepare(load(manifest), game_instance)
+    except instance.InstanceBusy:
+        # The running game keeps its files; its next start renews them.
+        pass
 
 
 def desktop_entry(game: Game) -> str:

@@ -73,6 +73,14 @@ def prepare(game: Game, profile: Profile, native: Mode, where: Locations) -> Pre
 def run(game: Game, profile: Profile, native: Mode, where: Locations) -> Path:
     """Start the game and wait until it exits. Its output goes to a log file, which is
     returned; a nonzero exit raises LaunchError naming that log."""
+    try:
+        with instance.lock(where.roots(game)["instance"]):
+            return _run(game, profile, native, where)
+    except instance.InstanceBusy:
+        raise LaunchError(f"{game.name} is already running.") from None
+
+
+def _run(game: Game, profile: Profile, native: Mode, where: Locations) -> Path:
     prepared = prepare(game, profile, native, where)
 
     where.log_dir.mkdir(parents=True, exist_ok=True)

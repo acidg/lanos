@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from conftest import NATIVE, write_package
 
-from lanbox import launch
+from lanbox import instance, launch
 from lanbox.configure import ConfigureError
 from lanbox.manifest import load
 
@@ -150,6 +150,16 @@ def test_run_logs_command_and_game_output(packages, tmp_path, locations, player)
     assert "# command: " in text
     assert "started as Bene\n" in text
     assert text.endswith("# exit code: 0\n")
+
+
+def test_game_cannot_run_twice(packages, tmp_path, locations, player):
+    game = make_game(packages, tmp_path, command=game_script(tmp_path, "true"))
+
+    with instance.lock(locations.instances / "test"):
+        with pytest.raises(launch.LaunchError, match="already running"):
+            launch.run(game, player, NATIVE, locations)
+
+    launch.run(game, player, NATIVE, locations)
 
 
 def test_failing_game_reports_its_log(packages, tmp_path, locations, player):

@@ -2,13 +2,34 @@
 Wine prefix, and for games that write next to themselves a writable copy of their
 files."""
 
+import fcntl
 import shutil
 import subprocess
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 from .manifest import Game
 
 INSTALL_NAME = "install"
+LOCK_NAME = ".running"
+
+
+class InstanceBusy(Exception):
+    """The game is running, so its instance must not be started or changed."""
+
+
+@contextmanager
+def lock(instance: Path) -> Iterator[None]:
+    """Hold the instance while a game runs from it or it is being prepared. The lock
+    ends with the process, so a crashed game never leaves it behind."""
+    instance.mkdir(parents=True, exist_ok=True)
+    with (instance / LOCK_NAME).open("w") as lock_file:
+        try:
+            fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise InstanceBusy() from None
+        yield
 
 
 def install_dir(instance: Path) -> Path:
