@@ -1,0 +1,25 @@
+# Build outputs
+/result*
+/out/
+/vm/
+
+# Harness worktrees
+/.claude/worktrees/
+
+# Game data lives on the /games partition, never in git. Guard against the usual
+# binary and archive types.
+*.img
+*.iso
+*.bmap
+*.qcow2
+*.exe
+*.dll
+*.pak
+*.gcf
+*.vpk
+*.big
+*.ff
+*.iwd
+*.zip
+*.7z
+*.rar
