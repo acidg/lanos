@@ -74,6 +74,11 @@ let
       type = types.bool;
       default = true;
     };
+    fpsCounter = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Show the frame rate over the game, drawn by gamescope with MangoHud.";
+    };
     resolution = mkOption {
       type = types.strMatching "native|[0-9]+x[0-9]+";
       default = "native";
@@ -115,28 +120,32 @@ let
 
   usesInstall = builtins.any (config: config.root == "install") game.configs;
 
-  manifest = assert lib.assertMsg (
-    usesInstall -> game.install != null
-  ) "${game.id}: configs with root \"install\" need the install option"; {
-    # The game.json layout the launcher understands.
-    format = 1;
-    inherit (game)
-      id
-      name
-      version
-      command
-      env
-      directory
-      gamescope
-      ;
-    resolution = parseResolution game.resolution;
-    install = if game.install == null then null else "${game.install}";
-    configs = map (config: {
-      template = "${config.template}";
-      inherit (config) target root;
-    }) game.configs;
-    configure = if game.configure == null then null else "${game.configure}";
-  };
+  manifest =
+    assert lib.assertMsg (
+      usesInstall -> game.install != null
+    ) "${game.id}: configs with root \"install\" need the install option";
+    assert lib.assertMsg (game.fpsCounter -> game.gamescope) "${game.id}: fpsCounter needs gamescope";
+    {
+      # The game.json layout the launcher understands.
+      format = 1;
+      inherit (game)
+        id
+        name
+        version
+        command
+        env
+        directory
+        gamescope
+        ;
+      fps_counter = game.fpsCounter;
+      resolution = parseResolution game.resolution;
+      install = if game.install == null then null else "${game.install}";
+      configs = map (config: {
+        template = "${config.template}";
+        inherit (config) target root;
+      }) game.configs;
+      configure = if game.configure == null then null else "${game.configure}";
+    };
 in
 pkgs.writeTextFile {
   name = "${game.id}-${game.version}";

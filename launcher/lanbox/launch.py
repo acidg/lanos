@@ -40,10 +40,11 @@ class Prepared:
     cwd: Path
 
 
-def gamescope_command(native: Mode, values: dict[str, str]) -> list[str]:
+def gamescope_command(native: Mode, values: dict[str, str], fps_counter: bool) -> list[str]:
     """Fullscreen at the native resolution, with the game rendering at the resolution
-    it asked for; gamescope scales it, so the display never switches modes."""
-    return [
+    it asked for; gamescope scales it, so the display never switches modes. gamescope
+    draws the frame rate itself, which works whatever the game renders with."""
+    command = [
         "gamescope",
         "-W", str(native.width),
         "-H", str(native.height),
@@ -51,8 +52,10 @@ def gamescope_command(native: Mode, values: dict[str, str]) -> list[str]:
         "-h", values["height"],
         "-r", str(native.refresh),
         "-f",
-        "--",
     ]  # fmt: skip
+    if fps_counter:
+        command.append("--mangoapp")
+    return command + ["--"]
 
 
 def prepare(game: Game, profile: Profile, native: Mode, where: Locations) -> Prepared:
@@ -65,7 +68,7 @@ def prepare(game: Game, profile: Profile, native: Mode, where: Locations) -> Pre
 
     command = configure.render_command(game, values)
     if game.gamescope:
-        command = gamescope_command(native, values) + command
+        command = gamescope_command(native, values, game.fps_counter) + command
     directory = Path(configure.render(game.directory, values, f"{game.id} directory"))
     return Prepared(command, configure.render_env(game, values), directory)
 

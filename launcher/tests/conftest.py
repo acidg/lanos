@@ -21,6 +21,7 @@ def game_json(**overrides) -> dict:
         "env": {},
         "directory": "$instance",
         "gamescope": False,
+        "fps_counter": False,
         "resolution": {"width": 1024, "height": 768},
         "configs": [],
         "configure": None,

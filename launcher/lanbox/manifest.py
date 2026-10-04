@@ -40,6 +40,8 @@ class Game:
     # Working directory, a template like the command.
     directory: str
     gamescope: bool
+    # gamescope draws MangoHud's frame rate over the game.
+    fps_counter: bool
     # None means the display's native resolution.
     resolution: Resolution | None
     configs: tuple[ConfigFile, ...]
@@ -68,6 +70,8 @@ def _parse(data: dict) -> Game:
         env=dict(data["env"]),
         directory=data["directory"],
         gamescope=data["gamescope"],
+        # Packages built before the option have none.
+        fps_counter=data.get("fps_counter", False),
         resolution=Resolution(**resolution) if resolution else None,
         configs=configs,
         configure_hook=Path(data["configure"]) if data["configure"] else None,

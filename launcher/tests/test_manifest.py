@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from conftest import write_package
 
@@ -24,6 +26,16 @@ def test_native_resolution_is_none(packages):
     package = write_package(packages, resolution=None)
 
     assert load(package / "game.json").resolution is None
+
+
+def test_game_json_without_fps_counter_shows_none(packages):
+    package = write_package(packages)
+    manifest = package / "game.json"
+    data = json.loads(manifest.read_text())
+    del data["fps_counter"]
+    manifest.write_text(json.dumps(data))
+
+    assert load(manifest).fps_counter is False
 
 
 @pytest.mark.parametrize(

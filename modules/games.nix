@@ -40,7 +40,13 @@ in
   config = lib.mkMerge [
     {
       programs.gamescope.enable = true;
-      environment.systemPackages = [ lanbox ];
+      # gamescope starts MangoHud's mangoapp for games with an fps counter; the frame
+      # rate alone covers less of the game than MangoHud's default statistics.
+      environment.systemPackages = [
+        lanbox
+        pkgs.mangohud
+      ];
+      environment.sessionVariables.MANGOHUD_CONFIG = "fps_only";
 
       # Installed packages link here, writable per-stick game state lives in instances.
       systemd.tmpfiles.rules = [

@@ -167,3 +167,17 @@ def test_failing_game_reports_its_log(packages, tmp_path, locations, player):
 
     with pytest.raises(launch.LaunchError, match="code 3"):
         launch.run(game, player, NATIVE, locations)
+
+
+def test_gamescope_draws_the_fps_counter(packages, tmp_path, locations, player):
+    game = make_game(packages, tmp_path, gamescope=True, fps_counter=True)
+
+    command = launch.prepare(game, player, NATIVE, locations).command
+
+    assert "--mangoapp" in command[: command.index("--")]
+
+
+def test_no_fps_counter_by_default(packages, tmp_path, locations, player):
+    game = make_game(packages, tmp_path, gamescope=True)
+
+    assert "--mangoapp" not in launch.prepare(game, player, NATIVE, locations).command

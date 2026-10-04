@@ -208,6 +208,7 @@ which takes a few seconds longer.
 | `env` | `{ }` | Environment variables. |
 | `directory` | `"$instance"` | Working directory. Many games load their DLLs or data from there; set it to the game's directory (`$install`, or a path in `files`). |
 | `gamescope` | `true` | Run the game in gamescope, which shows it fullscreen at the display's resolution. |
+| `fpsCounter` | `false` | Show the frame rate in a corner of the screen, drawn by gamescope with MangoHud. Needs `gamescope`. |
 | `resolution` | `"native"` | Resolution the game renders at, e.g. `"1024x768"` for old games; gamescope scales it to the display. |
 | `configs` | `[ ]` | Templates rendered before every start, see below. |
 | `configure` | `null` | Script run before every start, for settings a template cannot express. Gets the variables as `LANBOX_PLAYER_NAME`, `LANBOX_INSTANCE` and so on. |
