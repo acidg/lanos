@@ -33,10 +33,8 @@
     ktexteditor
     okular
     plasma-browser-integration
-    plasma-keyboard
     plasma-workspace-wallpapers
     qrca
-    qtvirtualkeyboard
   ];
   programs.kde-pim.enable = false;
   services.orca.enable = false;
@@ -73,6 +71,14 @@
   environment.etc."xdg/kcminputrc".text = ''
     [Libinput][Defaults][Touchpad]
     DisableWhileTyping=false
+  '';
+  # Handhelds such as the Steam Deck have no keyboard, e.g. for the Wi-Fi password. The
+  # on-screen keyboard opens when a text field is tapped on a touchscreen; with a real
+  # keyboard it stays hidden.
+  environment.etc."xdg/kwinrc".text = ''
+    [Wayland]
+    InputMethod=/run/current-system/sw/share/applications/org.kde.plasma.keyboard.desktop
+    VirtualKeyboardEnabled=true
   '';
   # A wallet would ask the player to create a password on the first Wi-Fi login, and
   # protects nothing on an unencrypted stick. Without it, Wi-Fi passwords are stored
