@@ -176,6 +176,9 @@ Three parts work together:
 
 Every player must own the games.
 
+To add a game, see [Adding a game](docs/adding-a-game.md): finding out what it needs,
+writing its recipe, running it in Wine, and debugging it on a stick.
+
 ### Starting a group
 
 ```sh
@@ -255,6 +258,7 @@ pkgs/                   Nix packages of the launcher and the master tools
 scripts/                flash.sh, add-ssh-key.sh, update-stick.sh, run-vm.sh,
                         lanos-import, lanos-publish, lanos-push
 templates/group/        Starting point for a group flake
+docs/                   Adding a game
 ```
 
 ## License
