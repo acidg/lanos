@@ -1,0 +1,18 @@
+# Serves a library store like the master module does, on a host that holds the store but
+# does not run the master module. The image comes from this flake (see the README,
+# "Serving the library with Docker").
+#
+# Usage: LANOS_LIBRARY=/path/to/library docker compose up -d
+#   LANOS_PORT  port the sticks use (default 5000, as in the group's library.url)
+#   LANOS_USER  owner of the library store as uid:gid (default 1000:100)
+services:
+  library:
+    image: lanos-library:latest
+    restart: unless-stopped
+    # As the store's owner and writable: SQLite creates lock files next to the store's
+    # database even when only reading, and lanos-publish must still be able to use them.
+    user: "${LANOS_USER:-1000:100}"
+    ports:
+      - "${LANOS_PORT:-5000}:8080"
+    volumes:
+      - "${LANOS_LIBRARY:?set LANOS_LIBRARY to the library store}:/library"

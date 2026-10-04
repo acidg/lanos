@@ -6,12 +6,12 @@
 # Usage: lanos-publish
 #   LANOS_LIBRARY      library store (set on a LANOS master)
 #   LANOS_SIGNING_KEY  secret key file of the library (set on a LANOS master)
-#   LANOS_INDEX_DIR    where the served games.json goes (set on a LANOS master)
+#   LANOS_INDEX_DIR    where the served games.json goes (default: $LANOS_LIBRARY/index)
 #   LANOS_FLAKE        group flake (default: the current directory)
 
 library=${LANOS_LIBRARY:?set LANOS_LIBRARY to the library store}
 key=${LANOS_SIGNING_KEY:?set LANOS_SIGNING_KEY to the library signing key}
-index_dir=${LANOS_INDEX_DIR:?set LANOS_INDEX_DIR to the directory games.json is served from}
+index_dir=${LANOS_INDEX_DIR:-$library/index}
 flake=${LANOS_FLAKE:-.}
 profile="$library/nix/var/nix/profiles/library"
 
@@ -25,6 +25,7 @@ echo "Signing..."
 nix store sign --store "$library" --key-file "$key" --recursive "$index"
 
 # Write and rename, so a stick never reads a half-written index.
+mkdir -p "$index_dir"
 cp "$library$index/games.json" "$index_dir/games.json.new"
 mv "$index_dir/games.json.new" "$index_dir/games.json"
 echo "Published:"

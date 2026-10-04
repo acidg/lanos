@@ -35,6 +35,7 @@
         image = lanbox.config.system.build.image;
         lanbox = pkgs.callPackage ./pkgs/lanbox.nix { };
         lanos-tools = pkgs.callPackage ./pkgs/lanos-tools.nix { };
+        library-server = pkgs.callPackage ./pkgs/library-server.nix { };
         default = self.packages.${system}.image;
       };
 

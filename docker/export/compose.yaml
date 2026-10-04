@@ -1,6 +1,6 @@
 # Serves a game library exported as a static binary cache, on a host without Nix, e.g.
 # a NAS. The folder holds the cache and games.json (see the README, "Serving the library
-# without Nix").
+# with Docker").
 #
 # Usage: LANOS_CACHE=/path/to/export docker compose up -d
 #   LANOS_PORT  port the sticks use (default 5000, as in the group's library.url)

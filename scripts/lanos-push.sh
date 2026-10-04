@@ -3,7 +3,7 @@
 #
 # Usage: lanos-push <stick> <game id>...
 #   LANOS_LIBRARY    library store (set on a LANOS master)
-#   LANOS_INDEX_DIR  where the published games.json is (set on a LANOS master)
+#   LANOS_INDEX_DIR  where the published games.json is (default: $LANOS_LIBRARY/index)
 #   LANOS_SSH_KEY    private key for the sticks (default: ~/.ssh/lanos_ed25519)
 
 die() {
@@ -15,7 +15,7 @@ die() {
 host=$1
 shift
 library=${LANOS_LIBRARY:?set LANOS_LIBRARY to the library store}
-index="${LANOS_INDEX_DIR:?set LANOS_INDEX_DIR}/games.json"
+index="${LANOS_INDEX_DIR:-$library/index}/games.json"
 key=${LANOS_SSH_KEY:-$HOME/.ssh/lanos_ed25519}
 [[ -f $index ]] || die "nothing published yet, run lanos-publish first"
 

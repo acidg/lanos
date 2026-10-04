@@ -240,27 +240,42 @@ lanos-push lanbox-xxxxxx cs16 [game ...]
   `<library>/nix/var/nix/profiles/library`.
 - `lanos-push` installs games on a stick over SSH, copying only what it does not have.
 
-### Serving the library without Nix
+### Serving the library with Docker
 
-Sticks only need the library's files over HTTP, so another machine without Nix, e.g. a
-NAS, can serve it. After each publish, export it on the master as a static binary cache,
-which copies only what the export does not have yet:
+Without the master module, Docker serves the library. Both variants listen on port 5000;
+`library.url` in the group flake must name the server.
+
+**The library store** (`docker/store/`), on the machine that holds it: harmonia and nginx
+serve it as the master module does. Build and load the image once, then start it:
+
+```sh
+docker load -i "$(nix build --no-link --print-out-paths github:acidg/lanos#library-server)"
+LANOS_LIBRARY=/path/to/library docker compose up -d
+```
+
+It runs as the store's owner, `LANOS_USER` (default `1000:100`). The tools run as the
+group flake's apps, e.g. `nix run .#publish`, with `LANOS_LIBRARY` and
+`LANOS_SIGNING_KEY` set; `games.json` goes to `<library>/index`, where the container
+serves it from.
+
+**An export** (`docker/export/`), on a machine without Nix and without the store, e.g. a
+NAS: plain files of a static binary cache, served by nginx. After each publish, export
+the library; this copies only what the export does not have yet:
 
 ```sh
 export=/path/to/export
 nix copy --from "$LANOS_LIBRARY" --to "file://$export?compression=zstd" \
   "$(readlink -f "$LANOS_LIBRARY/nix/var/nix/profiles/library")"
-cp "$LANOS_INDEX_DIR/games.json" "$export/"
+cp "${LANOS_INDEX_DIR:-$LANOS_LIBRARY/index}/games.json" "$export/"
 ```
 
-Copy the folder to the server and start the web server from `docker/` there:
+Copy the folder to the server and start nginx there:
 
 ```sh
 LANOS_CACHE=/path/to/export docker compose up -d
 ```
 
-It listens on port 5000; `library.url` in the group flake must name this server. The
-signing key stays on the master, as the export is already signed.
+The signing key stays on the publishing machine, as the export is already signed.
 
 ### On the stick
 
@@ -292,7 +307,7 @@ launcher/               lanbox, the game launcher (Python)
 pkgs/                   Nix packages of the launcher and the master tools
 scripts/                flash.sh, add-ssh-key.sh, update-stick.sh, run-vm.sh,
                         lanos-import, lanos-publish, lanos-push
-docker/                 Web server for a library exported to a host without Nix
+docker/                 Docker setups serving a library store (store/) or an export (export/)
 templates/group/        Starting point for a group flake
 docs/                   Adding a game
 ```
