@@ -87,4 +87,10 @@
     [Wallet]
     Enabled=false
   '';
+  # Players share sticks and reboot often; restoring the previous session would reopen
+  # whatever the last person left open, e.g. a debugging terminal.
+  environment.etc."xdg/ksmserverrc".text = ''
+    [General]
+    loginMode=emptySession
+  '';
 }
