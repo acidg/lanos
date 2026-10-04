@@ -2,16 +2,22 @@
 
 import argparse
 import shlex
+import shutil
 import sys
 from pathlib import Path
 
-from . import dialogs, display, launch, library, paths, profile
+from . import dialogs, display, launch, library, manage, paths, profile
 from .configure import ConfigureError
 from .display import DisplayError
 from .manifest import Game, ManifestError, load_installed
 from .profile import Profile
 
 NAME_QUESTION = "Spielername / Player name"
+# Where installed games take their space.
+STORE_DIR = "/nix/store"
+# Commands that ask through desktop dialogs even when started in a terminal, which then
+# only shows their progress.
+DESKTOP_COMMANDS = {"manage"}
 
 # Expected failures, reported to the player without a traceback.
 ERRORS = (
@@ -88,17 +94,42 @@ def cmd_install(args, ui) -> None:
     library.update_menu(paths.packages_dir(), paths.applications_dir())
 
 
-def cmd_sync(args, ui) -> None:
+def _free_space() -> str:
+    return manage.size(shutil.disk_usage(STORE_DIR).free)
+
+
+def cmd_manage(args, ui) -> None:
     url = paths.library_url()
     if url is None:
         raise ValueError("This stick has no game library configured.")
+    print("Reading the game library...")
     available = library.fetch_index(url)
-    for game_id in args.games or available:
-        if game_id not in available:
-            raise ValueError(f"The library has no game '{game_id}'.")
-        print(f"Installing {game_id}...")
-        library.install(paths.packages_dir(), paths.instances_dir(), game_id, available[game_id])
+    installed = library.installed(paths.packages_dir())
+    needed = {
+        game_id: library.needed_bytes(url, offered.path)
+        for game_id, offered in available.items()
+        if game_id not in installed or installed[game_id].path != offered.path
+    }
+    text = f"Spiele auf diesem Stick / Games on this stick\nFrei / Free: {_free_space()}"
+    chosen = ui.choose(text, manage.choices(available, installed, needed))
+    if chosen is None:
+        raise Cancelled()
+    changes = manage.changes(available, installed, set(chosen))
+    if not changes.install and not changes.remove:
+        return
+
+    # Removing first makes room for what is installed next.
+    for game_id in changes.remove:
+        print(f"Removing {installed[game_id].name}...")
+        library.uninstall(paths.packages_dir(), paths.instances_dir(), game_id)
+    if changes.remove:
+        library.collect_garbage()
     library.update_menu(paths.packages_dir(), paths.applications_dir())
+    for game_id in changes.install:
+        print(f"Installing {available[game_id].name}...")
+        library.install(paths.packages_dir(), paths.instances_dir(), game_id, available[game_id].path)
+        library.update_menu(paths.packages_dir(), paths.applications_dir())
+    ui.info(f"Fertig / Done\nFrei / Free: {_free_space()}")
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -111,8 +142,7 @@ def _parser() -> argparse.ArgumentParser:
     configure.add_argument("game")
     run = commands.add_parser("run", help="configure and start a game")
     run.add_argument("game")
-    sync = commands.add_parser("sync", help="install or update games from the library")
-    sync.add_argument("games", nargs="*", help="game ids (default: all)")
+    commands.add_parser("manage", help="choose which games of the library are on this stick")
     install = commands.add_parser("install", help="install a game package already on this stick")
     install.add_argument("game")
     install.add_argument("store_path")
@@ -124,14 +154,14 @@ COMMANDS = {
     "name": cmd_name,
     "configure": cmd_configure,
     "run": cmd_run,
-    "sync": cmd_sync,
+    "manage": cmd_manage,
     "install": cmd_install,
 }
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
-    ui = dialogs.for_this_process()
+    ui = dialogs.Desktop() if args.command in DESKTOP_COMMANDS else dialogs.for_this_process()
     try:
         COMMANDS[args.command](args, ui)
     except Cancelled:

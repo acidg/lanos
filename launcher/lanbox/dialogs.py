@@ -3,8 +3,18 @@ desktop dialogs, since games are usually started from the application menu."""
 
 import subprocess
 import sys
+from dataclasses import dataclass
 
 TITLE = "LANOS"
+
+
+@dataclass(frozen=True)
+class Choice:
+    """An entry of a checklist, returned by its key when ticked."""
+
+    key: str
+    label: str
+    ticked: bool
 
 
 class Terminal:
@@ -20,6 +30,9 @@ class Terminal:
     def error(self, message: str) -> None:
         print(message, file=sys.stderr)
 
+    def info(self, message: str) -> None:
+        print(message)
+
 
 class Desktop:
     def ask(self, question: str, default: str = "") -> str | None:
@@ -34,10 +47,24 @@ class Desktop:
             return None
         return result.stdout.strip()
 
+    def choose(self, text: str, choices: list[Choice]) -> list[str] | None:
+        """The keys of the ticked choices, or None if the player cancelled."""
+        command = ["kdialog", "--title", TITLE, "--separate-output", "--checklist", text]
+        for choice in choices:
+            command += [choice.key, choice.label, "on" if choice.ticked else "off"]
+        result = subprocess.run(command, capture_output=True, text=True, check=False)
+        if result.returncode != 0:
+            return None
+        return result.stdout.split()
+
     def error(self, message: str) -> None:
         # Also on stderr, which ends up in the session journal.
         print(message, file=sys.stderr)
         subprocess.run(["kdialog", "--title", TITLE, "--error", message], check=False)
+
+    def info(self, message: str) -> None:
+        print(message)
+        subprocess.run(["kdialog", "--title", TITLE, "--msgbox", message], check=False)
 
 
 def for_this_process() -> Terminal | Desktop:

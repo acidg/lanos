@@ -228,7 +228,7 @@ installs the tools below, which run in a checkout of the group flake.
 lanos-import cs16 ~/.steam/steam/steamapps/common/Half-Life
 lanos-import cs16 deck@steamdeck:.local/share/Steam/steamapps/common/Half-Life
 lanos-publish
-lanos-push lanbox-xxxxxx [game ...]
+lanos-push lanbox-xxxxxx cs16 [game ...]
 ```
 
 - `lanos-import` copies a game's files from an install, locally or over SSH, e.g. from
@@ -242,9 +242,12 @@ lanos-push lanbox-xxxxxx [game ...]
 
 ### On the stick
 
-Players run "Update Games" from the application menu, which installs every game of the
-library (`lanbox sync`). Each installed game gets its own menu entry. On the first
-start the launcher asks for the player's name; "lanbox name" changes it.
+Players choose the games on their stick with "Manage Games" from the application menu
+(`lanbox manage`). It lists the library's games with the space each one takes and the
+free space on the stick; ticking a game installs or updates it, unticking one removes
+it with its settings and Wine prefix and frees its space. Each installed game gets its
+own menu entry. On the first start the launcher asks for the player's name;
+"lanbox name" changes it.
 
 ```sh
 lanbox list            # installed games

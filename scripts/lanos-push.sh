@@ -1,8 +1,7 @@
 # Install games on a stick from the master, for sticks the organizer wants to prepare
 # without the player pulling them. Copies only what the stick does not have yet.
 #
-# Usage: lanos-push <stick> [game id...]
-#   Without game ids, all published games are pushed.
+# Usage: lanos-push <stick> <game id>...
 #   LANOS_LIBRARY    library store (set on a LANOS master)
 #   LANOS_INDEX_DIR  where the published games.json is (set on a LANOS master)
 #   LANOS_SSH_KEY    private key for the sticks (default: ~/.ssh/lanos_ed25519)
@@ -12,7 +11,7 @@ die() {
   exit 1
 }
 
-[[ $# -ge 1 ]] || die "usage: lanos-push <stick> [game id...]"
+[[ $# -ge 2 ]] || die "usage: lanos-push <stick> <game id>..."
 host=$1
 shift
 library=${LANOS_LIBRARY:?set LANOS_LIBRARY to the library store}
@@ -23,12 +22,7 @@ key=${LANOS_SSH_KEY:-$HOME/.ssh/lanos_ed25519}
 ssh_opts=(-i "$key" -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new)
 export NIX_SSHOPTS="${ssh_opts[*]}"
 
-ids=("$@")
-if [[ ${#ids[@]} -eq 0 ]]; then
-  mapfile -t ids < <(jq -r '.games | keys[]' "$index")
-fi
-
-for id in "${ids[@]}"; do
+for id in "$@"; do
   path=$(jq -r --arg id "$id" '.games[$id].path // empty' "$index")
   [[ -n $path ]] || die "the library has no game '$id'"
   echo "Pushing $id..."

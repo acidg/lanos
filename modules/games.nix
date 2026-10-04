@@ -11,14 +11,15 @@ let
   cfg = config.lanos.library;
   lanbox = pkgs.callPackage ../pkgs/lanbox.nix { };
 
-  syncEntry = pkgs.makeDesktopItem {
-    name = "lanbox-sync";
-    desktopName = "Update Games";
-    icon = "system-software-update";
-    exec = "lanbox sync";
+  # The terminal shows the download progress; the choice itself is a dialog.
+  manageEntry = pkgs.makeDesktopItem {
+    name = "lanbox-manage";
+    desktopName = "Manage Games";
+    icon = "system-software-install";
+    exec = "lanbox manage";
     terminal = true;
     categories = [ "Game" ];
-    extraConfig."Name[de]" = "Spiele aktualisieren";
+    extraConfig."Name[de]" = "Spiele verwalten";
   };
 in
 {
@@ -56,7 +57,7 @@ in
         }
       ];
 
-      environment.systemPackages = [ syncEntry ];
+      environment.systemPackages = [ manageEntry ];
       environment.sessionVariables.LANBOX_LIBRARY_URL = cfg.url;
 
       # Only the library: a party has no internet, and the library holds the complete

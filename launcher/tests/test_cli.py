@@ -59,9 +59,10 @@ def test_game_that_is_not_installed_is_reported(monkeypatch):
     assert "'nope' is not installed" in fake.errors[0]
 
 
-def test_sync_without_library_is_reported(monkeypatch):
-    fake = use_dialogs(monkeypatch, [])
+def test_manage_without_library_is_reported_in_a_dialog(monkeypatch):
+    fake = FakeDialogs([])
+    monkeypatch.setattr(cli.dialogs, "Desktop", lambda: fake)
 
-    assert cli.main(["sync"]) == 1
+    assert cli.main(["manage"]) == 1
 
     assert "no game library" in fake.errors[0]
