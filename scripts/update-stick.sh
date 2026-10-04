@@ -10,6 +10,7 @@
 # Usage: scripts/update-stick.sh <host> [private key file]
 #   The key defaults to ~/.ssh/lanos_ed25519.
 #   SSH_PORT  SSH port of the stick (default 22, 2222 for scripts/run-vm.sh)
+#   LANOS_FLAKE  flake to build the system from, e.g. the group flake (default: this checkout)
 set -euo pipefail
 
 die() {
@@ -21,6 +22,7 @@ die() {
 host=$1
 key=${2:-$HOME/.ssh/lanos_ed25519}
 repo=$(cd "$(dirname "$0")/.." && pwd)
+flake=${LANOS_FLAKE:-$repo}
 
 [[ -f $key ]] || die "no private key at $key"
 
@@ -28,7 +30,7 @@ ssh_opts=(-i "$key" -p "${SSH_PORT:-22}" -o IdentitiesOnly=yes -o StrictHostKeyC
 export NIX_SSHOPTS="${ssh_opts[*]}"
 
 echo "Building the system..."
-system=$(nix build --no-link --print-out-paths "$repo#nixosConfigurations.lanbox.config.system.build.toplevel")
+system=$(nix build --no-link --print-out-paths "$flake#nixosConfigurations.lanbox.config.system.build.toplevel")
 
 echo "Removing systems from $host that no longer run..."
 # The stick keeps only the running system, so older systems do not take space from
